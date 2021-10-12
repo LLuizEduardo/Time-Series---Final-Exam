@@ -20,7 +20,7 @@ data_er=ts(data[2:nrow(data),],start=c(1971,2),frequency=12)
 ##########Time series names#####################
 names_data_er=colnames(data_er)
 #########Time series date#######################
-date=seq(as.Date('1971−02−01'), by= 'month', along=data_er_ret[,1])
+date=seq(as.Date('1971-02-01'), by= 'month', along=data_er_ret[,1])
 ######Plot Exchangerate
 plot(data_er)
 #######Plot returns###########
@@ -50,6 +50,20 @@ library(vars)
 varModel<-VARselect(data_er_ret, type = 'const', lag.max = 12)
 nlag<- min(varModel$selection[1],varModel$selection[3])
 
+#-----------------------
+regressao<-lm(gbp ~ aud, data_er_ret)
+plot.ts(regressao$residuals)
+adf.test(regressao$residuals)
+
+#p-valor < 0.01 os residuos sao estacionarios. logo as series sao cointegradas
+#-----------------------
+library(vars)
+estimacaoVar<-VAR(data_er_ret, lag.max = 2)
+
+estimacaoVar$varresult
+
+#-----------------------
+
 if (nlag < 2) {K <- 2
 }else{
   K<- nlag
@@ -61,4 +75,8 @@ summary(o.VECM)
 
 a<-tsDyn::rank.test(o.VECM, cval = 0.05)
 summary(a)
+
+coint<-ca.jo(data_er_ret)
+summary(coint)
+
 

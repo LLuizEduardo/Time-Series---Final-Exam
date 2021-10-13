@@ -1,13 +1,15 @@
 
+# set directory
 setwd('G:/Meu Drive/3º Sem/Econometria II/Final Exam')
-
-key <- read.table(file = 'api_key.txt', header = FALSE)
 
 library(Quandl)
 library(xts)
 
+# import key
+key <- read.table(file = 'api_key.txt', header = FALSE)
 Quandl.api_key(unlist(key))
 
+# import data
 gbp=Quandl( 'FRED/DEXUSUK' , type= 'ts' , collapse = 'monthly' , order= 'asc' )
 aud=Quandl( 'FRED/DEXUSAL' , type= 'ts' , collapse = 'monthly' , order= 'asc' )
 
@@ -26,7 +28,8 @@ plot(data_er)
 #######Plot returns###########
 plot(data_er_ret)
 
-#
+
+# unit root test
 library(tseries)
 
 testList <- cbind(data_er, data_er_ret)
@@ -46,24 +49,18 @@ for (i in 1:length(name_testList)) {
 
 rm(aTem)
 
+# lags select - var criteria
 library(vars)
 varModel<-VARselect(data_er_ret, type = 'const', lag.max = 12)
 nlag<- min(varModel$selection[1],varModel$selection[3])
 
-#-----------------------
-regressao<-lm(gbp ~ aud, data_er_ret)
-plot.ts(regressao$residuals)
-adf.test(regressao$residuals)
+# testing cointegration via regression
+reg<-lm(gbp ~ aud, data_er_ret)
+plot.ts(reg$residuals)
+adf.test(reg$residuals) #p-valor < 0.01 os residuos sao estacionarios. logo as series sao cointegradas
 
-#p-valor < 0.01 os residuos sao estacionarios. logo as series sao cointegradas
-#-----------------------
-library(vars)
-estimacaoVar<-VAR(data_er_ret, lag.max = 2)
 
-estimacaoVar$varresult
-
-#-----------------------
-
+# estimate VECM model and testing whether the series are cointegrated
 if (nlag < 2) {K <- 2
 }else{
   K<- nlag
@@ -76,7 +73,93 @@ summary(o.VECM)
 a<-tsDyn::rank.test(o.VECM, cval = 0.05)
 summary(a)
 
-coint<-ca.jo(data_er_ret)
-summary(coint)
+# other test
+#coint<-ca.jo(data_er_ret)
+#summary(coint)
 
+# forecast - one spep forward
+
+h=1
+t<-120
+T<-length(data_er_ret[,1])-t
+
+
+for (i in 1:T) {
+  previsao[t+i,3:4]<-predict(VECM(data_er_ret[1:t+i,], lag = K-1, estim = 'ML'), n.ahead = h)
+}
+
+
+previsao1<-ts(previsao)
+
+plot.ts(previsao1)
+previsao1<-as.xts(previsao1)
+previsao2[,3]<-previsao1[,2]
+plot.xts(previsao2[t:T,3:4])
+
+
+acum<-matrix(ncol = 2, nrow = t+T)
+acum[1,]<-1
+for (i in 2:609) {
+  acum[i,]<-acum[i-1,]*(1+data_er_ret[i,])
+}
+
+View(acum)
+
+acum1<-as.xts(ts(acum))
+plot.xts(acum1)
+
+
+for (i in 1:T) {
+  acum2[i,]<-acum[i-1,]*(1+data_er_ret[i,])
+}
+
+
+#   -----------------------------------------------------------------------
+
+previsao1
+
+decision<-matrix(ncol = 6, nrow = t+T)
+decision[1,1:2]<-1
+for (i in 2:609) {
+  decision[i,1:2]<-acum[i-1,]*(1+data_er_ret[i,])
+  
+}
+
+
+#   -----------------------------------------------------------------------
+
+
+if (p1>p0) {
+  
+}else if(p1<p0){
+  
+}else{
+  
+}
+
+
+
+
+#   -----------------------------------------------------------------------
+
+
+
+
+p1<-predict(VECM(data_er_ret[1:t+i,], lag = K-1, estim = 'ML'), n.ahead = h)
+
+if (p1>p0) {
+  
+}else if(p1<p0){
+  
+}else{
+  
+}
+
+
+
+
+
+previsao<-matrix(ncol=4, nrow = length(data_er_ret[,1])+h)
+
+previsao[1:length(data_er_ret[,1]),1:2]<-data_er_ret[1:length(data_er_ret[,1]),1:2]
 

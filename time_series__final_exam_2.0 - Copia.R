@@ -195,72 +195,7 @@ plot.ts(accumulatedReturn)
 #   -----------------------------------------------------------------------
 
 # testing others models
-w=300
-
-forecasts_comp<-matrix(ncol=6, nrow = t+T-w)
-
-for (i in 1:t+T-w) {
-  forecasts_comp[i,1:2]<-predict(VECM(data_er_ret[1:w+i,], lag = K-1, estim = 'ML'), n.ahead = h)
-}
-
-mean(forecasts_comp[,1])
-mean(forecasts_comp[,2])
-
-plot.ts(forecasts_comp)
-#-----------------------------------------------------------------------------
-
-decision2<-matrix(ncol = 3, nrow = T)
 
 
 
-for (i in 1:T) {
-  if (decision[i,1]<decision[i,2] & decision[i,1]<decision[i,4]) {
-    decision2[i,1]<-1
-    decision2[i,2]<-0
-  }else if(decision[i,1]>decision[i,2] & decision[i,1]>decision[i,4]){
-    decision2[i,1]<--1
-    decision2[i,2]<-0
-  }else{
-    decision2[i,1]<-0
-    decision2[i,2]<-0
-  }
-  
-  
-  # if (decision[i,1]<decision[i,2] & decision[i,1]<decision[i,4]) {
-  #   decision2[i,2]<--1
-  # }else if(decision[i,1]>decision[i,2] & decision[i,1]>decision[i,4]){
-  #   decision2[i,2]<-1
-  # }else{
-  #   decision2[i,2]<-0 
-  # }
-}
 
-decision2[,3]<-decision2[,1]*decision2[,2]
-
-plot.ts(decision2)
-
-# accumulatedReturn<-matrix(nrow = T, ncol = 2)
-# accumulatedReturn[1,]<-initialInvestment
-# 
-# for (i in 2:T) {
-#   accumulatedReturn[i,]<-accumulatedReturn[i-1,]*(1+rStar[i,])  
-# }
-
-
-returnExpect<-cbind(decision2[,1]*forecastRetTemp[,1], decision2[,2]*forecastRetTemp[,2])
-plot.ts(returnExpect[,1])
-plot.ts(returnExpect[,2])
-
-
-mean(returnExpect[,1])
-mean(returnExpect[,2])
-
-acum<-matrix(ncol = 3, nrow = T)
-acum[1,1:2]<-1
-for (i in 2:T) {
-  acum[i,1:2]<-acum[i-1,1:2]*(1+returnExpect[i,])
-}
-
-
-plot.ts(acum)
-#-------------------------------------------------------------------------------------

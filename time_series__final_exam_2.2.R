@@ -122,6 +122,12 @@ for (i in 2:T) {
 
 colnames(decision)<- c('gbp', 'gbp h+1', 'aud', 'aud h+1','gbp decision','aud decision')
 
+library(TTR)
+ratio<-data_er[,1]/data_er[,2]
+ratio<-cbind(ratio, SMA(ratio, n=5))
+ratio<-as.xts(ts(ratio))
+colnames(ratio)<-c('ratio','MAratio')
+plot.xts(ratio, legend.loc = 1)
 
 # for (i in 1:T) {
 #   if (round(decision[i,1],2)<round(decision[i,2],2)) {
@@ -143,25 +149,25 @@ colnames(decision)<- c('gbp', 'gbp h+1', 'aud', 'aud h+1','gbp decision','aud de
 # the preview procedure is useful if you round up the prices
 
 
-for (i in 1:T) {
-  if (decision[i,1]<decision[i,2]) {
+for (i in 2:T) {
+  if (decision[i-1,1]<decision[i,2] & ratio[t+i,1]>ratio[t+i,2]){#
     decision[i,5]<-1
-  }else if(decision[i,1]>decision[i,2]){
+  }else if(decision[i-1,1]>decision[i,2] & ratio[t+i,1]<ratio[t+i,2]){#
     decision[i,5]<--1
   }else{
     decision[i,5]<-0 
   }
   
-  if (decision[i,3]<decision[i,4]) {
+  if (decision[i-1,3]<decision[i,4] & ratio[t+i,1]<ratio[t+i,2]) {#
     decision[i,6]<-1
-  }else if(decision[i,3]>decision[i,4]){
+  }else if(decision[i-1,3]>decision[i,4] & ratio[t+i,1]>ratio[t+i,2]){#
     decision[i,6]<--1
   }else{
     decision[i,6]<-0 
   }
 }
 
-plot.ts(decision[,5:6])
+#plot.ts(decision[,5:6])
 
 
 
@@ -171,96 +177,32 @@ rStar_gbp<-decision[,5]*forecastRetTemp[,1]
 rStar_aud<-decision[,6]*forecastRetTemp[,3]
 rStar<- cbind(rStar_gbp, rStar_aud)
 
-par(mfrow=c(1,2))
-plot.ts(rStar_gbp)
-plot.ts(rStar_aud)
-
-mean(rStar_gbp)
-mean(rStar_aud)
+# par(mfrow=c(1,2))
+# plot.ts(rStar_gbp)
+# plot.ts(rStar_aud)
+# 
+# mean(rStar_gbp)
+# mean(rStar_aud)
 
 # accumulated return
 
 initialInvestment<-1
 
-accumulatedReturn<-matrix(nrow = T, ncol = 2)
-accumulatedReturn[1,]<-initialInvestment
+accumulatedReturn<-matrix(nrow = T, ncol = 3)
+accumulatedReturn[1,1:2]<-initialInvestment
 
 for (i in 2:T) {
- accumulatedReturn[i,]<-accumulatedReturn[i-1,]*(1+rStar[i,])  
+ accumulatedReturn[i,1:2]<-accumulatedReturn[i-1,1:2]*(1+rStar[i,])  
  }
+accumulatedReturn[,3]<-accumulatedReturn[,1]+accumulatedReturn[,2]
 
-
+colnames(accumulatedReturn)<-c('AccumRet gbp','AccumRet aud','Total Return')
 plot.ts(accumulatedReturn)
 
 #   -----------------------------------------------------------------------
 
 # testing others models
-w=300
-
-forecasts_comp<-matrix(ncol=6, nrow = t+T-w)
-
-for (i in 1:t+T-w) {
-  forecasts_comp[i,1:2]<-predict(VECM(data_er_ret[1:w+i,], lag = K-1, estim = 'ML'), n.ahead = h)
-}
-
-mean(forecasts_comp[,1])
-mean(forecasts_comp[,2])
-
-plot.ts(forecasts_comp)
-#-----------------------------------------------------------------------------
-
-decision2<-matrix(ncol = 3, nrow = T)
 
 
 
-for (i in 1:T) {
-  if (decision[i,1]<decision[i,2] & decision[i,1]<decision[i,4]) {
-    decision2[i,1]<-1
-    decision2[i,2]<-0
-  }else if(decision[i,1]>decision[i,2] & decision[i,1]>decision[i,4]){
-    decision2[i,1]<--1
-    decision2[i,2]<-0
-  }else{
-    decision2[i,1]<-0
-    decision2[i,2]<-0
-  }
-  
-  
-  # if (decision[i,1]<decision[i,2] & decision[i,1]<decision[i,4]) {
-  #   decision2[i,2]<--1
-  # }else if(decision[i,1]>decision[i,2] & decision[i,1]>decision[i,4]){
-  #   decision2[i,2]<-1
-  # }else{
-  #   decision2[i,2]<-0 
-  # }
-}
 
-decision2[,3]<-decision2[,1]*decision2[,2]
-
-plot.ts(decision2)
-
-# accumulatedReturn<-matrix(nrow = T, ncol = 2)
-# accumulatedReturn[1,]<-initialInvestment
-# 
-# for (i in 2:T) {
-#   accumulatedReturn[i,]<-accumulatedReturn[i-1,]*(1+rStar[i,])  
-# }
-
-
-returnExpect<-cbind(decision2[,1]*forecastRetTemp[,1], decision2[,2]*forecastRetTemp[,2])
-plot.ts(returnExpect[,1])
-plot.ts(returnExpect[,2])
-
-
-mean(returnExpect[,1])
-mean(returnExpect[,2])
-
-acum<-matrix(ncol = 3, nrow = T)
-acum[1,1:2]<-1
-for (i in 2:T) {
-  acum[i,1:2]<-acum[i-1,1:2]*(1+returnExpect[i,])
-}
-
-
-plot.ts(acum)
-#-------------------------------------------------------------------------------------
